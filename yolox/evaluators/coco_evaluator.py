@@ -164,7 +164,6 @@ class COCOEvaluator:
             model = model_trt
         
         outputs_list = []
-        ids_list = []
 
         for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
@@ -184,7 +183,7 @@ class COCOEvaluator:
                 if is_time_record:
                     infer_end = time_synchronized()
                     inference_time += infer_end - start
-
+                
                 outputs = postprocess(
                     outputs, self.num_classes, self.confthre, self.nmsthre
                 )
@@ -193,11 +192,10 @@ class COCOEvaluator:
                     nms_time += nms_end - infer_end
 
             outputs_list += outputs
-            ids_list += ids
             data_list.extend(self.convert_to_coco_format(outputs, info_imgs, ids))
         
-
-        self.evalf2(outputs_list, ids_list)
+        # evaluate
+        self.evalf2(outputs_list)
 
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
         if distributed:
@@ -300,31 +298,32 @@ class COCOEvaluator:
             return 0, 0, info
 
 
-    def evalf2(self, results, ids):
+    def evalf2(self, results):
         gt_bboxes = []
         dt_bboxes = []  # avoid shallow clone bug
 
         _coco = self.dataloader.dataset
-
-        for i in range(len(ids)):
+        # 顺序不会改变
+        for i in range(len(_coco.ids)):
             if results[i] == None:
                 dt_bboxes.append([])
             else:
-                dt_bboxes.append(results[i][:, :4].cpu())
+                dt_bboxes.append(results[i][:, :4])
 
             ann_info = _coco.annotations[i][0]
             if len(ann_info) == 0:
-                gt_bboxes.append(torch.zeros((0, 4), dtype=torch.half))
+                gt_bboxes.append(torch.zeros((0, 4), dtype=torch.half, device="cuda"))
                 continue
             bboxes = []
             for ann in ann_info:
                 x1, y1, x2, y2, zero_conf = ann
                 bboxes.append([x1, y1, x2, y2])
-            bboxes = torch.tensor(bboxes, dtype=torch.half)            
+            bboxes = torch.tensor(bboxes, dtype=torch.half, device="cuda")            
             if bboxes.shape[0] == 0:
-                bboxes = torch.zeros((0, 4), dtype=torch.half)
+                bboxes = torch.zeros((0, 4), dtype=torch.half, device="cuda")
             gt_bboxes.append(bboxes)
-
+        
+        # RUN OVER IOU THR
         iou_ths = np.arange(0.3, 0.85, 0.05)
         scores = [calculate_score(dt_bboxes, gt_bboxes, iou_th) for iou_th in iou_ths]
         ar = np.mean(scores)
