@@ -7,8 +7,8 @@ content = "../reef-data/out"
 class Exp(MyExp):
     def __init__(self):
         super(Exp, self).__init__()
-        self.depth = 0.33
-        self.width = 0.50
+        self.depth = 0.67
+        self.width = 0.75
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
@@ -38,8 +38,8 @@ class Exp(MyExp):
         self.enable_mixup = True
         """
 
-        self.input_size = (640, 640)
-        #self.input_size = (960, 960)
+
+        self.input_size = (960, 960)
         self.mosaic_scale = (0.5, 1.5)
         self.random_size = (10, 20)
         self.test_size = (960, 960)

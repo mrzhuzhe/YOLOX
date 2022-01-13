@@ -11,8 +11,6 @@ import torch.nn as nn
 
 from .base_exp import BaseExp
 
-__datadirtrain__ = "images"
-__datadirval__ = "images"
 
 class Exp(BaseExp):
     def __init__(self):
@@ -113,7 +111,6 @@ class Exp(BaseExp):
             dataset = COCODataset(
                 data_dir=self.data_dir,
                 json_file=self.train_ann,
-                name=__datadirtrain__,
                 img_size=self.input_size,
                 preproc=TrainTransform(
                     max_labels=50,
@@ -246,8 +243,7 @@ class Exp(BaseExp):
         valdataset = COCODataset(
             data_dir=self.data_dir,
             json_file=self.val_ann if not testdev else "image_info_test-dev2017.json",
-            #name="val2017" if not testdev else "test2017",
-            name=__datadirval__,
+            name="val2017" if not testdev else "test2017",
             img_size=self.test_size,
             preproc=ValTransform(legacy=legacy),
         )

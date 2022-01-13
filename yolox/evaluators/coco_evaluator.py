@@ -26,34 +26,42 @@ from yolox.utils import (
     xyxy2xywh
 )
 
+from torchvision.ops import box_iou
+from typing import List
 
-def per_class_AR_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AR"], colums=6):
-    per_class_AR = {}
-    recalls = coco_eval.eval["recall"]
-    # dimension of recalls: [TxKxAxM]
-    # recall has dims (iou, cls, area range, max dets)
-    assert len(class_names) == recalls.shape[1]
+# f2 threhold
+ZZ_THR = 0.5
+# [TODO] calculatef script update https://www.kaggle.com/c/tensorflow-great-barrier-reef/discussion/290757
+def calculate_score(
+    preds: List[torch.Tensor],
+    gts: List[torch.Tensor],
+    iou_th: float
+    #preds,
+    #gts,
+    #iou_th
+) -> float:
+    num_tp = 0
+    num_fp = 0
+    num_fn = 0
+    for p, gt in zip(preds, gts):
+        if len(p) and len(gt):
+            iou_matrix = box_iou(p[:,:4], gt)
+            tp = len(torch.where(iou_matrix.max(0)[0] >= iou_th)[0])
+            fp = len(p) - tp
+            fn = len(torch.where(iou_matrix.max(0)[0] < iou_th)[0])
+            num_tp += tp
+            num_fp += fp
+            num_fn += fn
+        elif len(p) == 0 and len(gt):
+            num_fn += len(gt)
+        elif len(p) and len(gt) == 0:
+            num_fp += len(p)
+    score = 5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp)
+    return score
 
-    for idx, name in enumerate(class_names):
-        recall = recalls[:, idx, 0, -1]
-        recall = recall[recall > -1]
-        ar = np.mean(recall) if recall.size else float("nan")
-        per_class_AR[name] = float(ar * 100)
-
-    num_cols = min(colums, len(per_class_AR) * len(headers))
-    result_pair = [x for pair in per_class_AR.items() for x in pair]
-    row_pair = itertools.zip_longest(*[result_pair[i::num_cols] for i in range(num_cols)])
-    table_headers = headers * (num_cols // len(headers))
-    table = tabulate(
-        row_pair, tablefmt="pipe", floatfmt=".3f", headers=table_headers, numalign="left",
-    )
-    return table
-
-
-def per_class_AP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AP"], colums=6):
-    per_class_AP = {}
+def per_class_mAP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AP"], colums=6):
+    per_class_mAP = {}
     precisions = coco_eval.eval["precision"]
-    # dimension of precisions: [TxRxKxAxM]
     # precision has dims (iou, recall, cls, area range, max dets)
     assert len(class_names) == precisions.shape[2]
 
@@ -63,10 +71,10 @@ def per_class_AP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "A
         precision = precisions[:, :, idx, 0, -1]
         precision = precision[precision > -1]
         ap = np.mean(precision) if precision.size else float("nan")
-        per_class_AP[name] = float(ap * 100)
+        per_class_mAP[name] = float(ap * 100)
 
-    num_cols = min(colums, len(per_class_AP) * len(headers))
-    result_pair = [x for pair in per_class_AP.items() for x in pair]
+    num_cols = min(colums, len(per_class_mAP) * len(headers))
+    result_pair = [x for pair in per_class_mAP.items() for x in pair]
     row_pair = itertools.zip_longest(*[result_pair[i::num_cols] for i in range(num_cols)])
     table_headers = headers * (num_cols // len(headers))
     table = tabulate(
@@ -89,8 +97,7 @@ class COCOEvaluator:
         nmsthre: float,
         num_classes: int,
         testdev: bool = False,
-        per_class_AP: bool = False,
-        per_class_AR: bool = False,
+        per_class_mAP: bool = False,
     ):
         """
         Args:
@@ -100,8 +107,7 @@ class COCOEvaluator:
             confthre: confidence threshold ranging from 0 to 1, which
                 is defined in the config file.
             nmsthre: IoU threshold of non-max supression ranging from 0 to 1.
-            per_class_AP: Show per class AP during evalution or not. Default to False.
-            per_class_AR: Show per class AR during evalution or not. Default to False.
+            per_class_mAP: Show per class mAP during evalution or not. Default to False.
         """
         self.dataloader = dataloader
         self.img_size = img_size
@@ -109,8 +115,7 @@ class COCOEvaluator:
         self.nmsthre = nmsthre
         self.num_classes = num_classes
         self.testdev = testdev
-        self.per_class_AP = per_class_AP
-        self.per_class_AR = per_class_AR
+        self.per_class_mAP = per_class_mAP
 
     def evaluate(
         self,
@@ -157,6 +162,9 @@ class COCOEvaluator:
             x = torch.ones(1, 3, test_size[0], test_size[1]).cuda()
             model(x)
             model = model_trt
+        
+        outputs_list = []
+        ids_list = []
 
         for cur_iter, (imgs, _, info_imgs, ids) in enumerate(
             progress_bar(self.dataloader)
@@ -184,7 +192,12 @@ class COCOEvaluator:
                     nms_end = time_synchronized()
                     nms_time += nms_end - infer_end
 
+            outputs_list += outputs
+            ids_list += ids
             data_list.extend(self.convert_to_coco_format(outputs, info_imgs, ids))
+        
+
+        self.evalf2(outputs_list, ids_list)
 
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
         if distributed:
@@ -280,10 +293,40 @@ class COCOEvaluator:
             with contextlib.redirect_stdout(redirect_string):
                 cocoEval.summarize()
             info += redirect_string.getvalue()
-            if self.per_class_AP:
-                info += "per class AP:\n" + per_class_AP_table(cocoEval) + "\n"
-            if self.per_class_AR:
-                info += "per class AR:\n" + per_class_AR_table(cocoEval) + "\n"
+            if self.per_class_mAP:
+                info += "per class mAP:\n" + per_class_mAP_table(cocoEval)
             return cocoEval.stats[0], cocoEval.stats[1], info
         else:
             return 0, 0, info
+
+
+    def evalf2(self, results, ids):
+        gt_bboxes = []
+        dt_bboxes = []  # avoid shallow clone bug
+
+        _coco = self.dataloader.dataset
+
+        for i in range(len(ids)):
+            if results[i] == None:
+                dt_bboxes.append([])
+            else:
+                dt_bboxes.append(results[i][:, :4].cpu())
+
+            ann_info = _coco.annotations[i][0]
+            if len(ann_info) == 0:
+                gt_bboxes.append(torch.zeros((0, 4), dtype=torch.half))
+                continue
+            bboxes = []
+            for ann in ann_info:
+                x1, y1, x2, y2, zero_conf = ann
+                bboxes.append([x1, y1, x2, y2])
+            bboxes = torch.tensor(bboxes, dtype=torch.half)            
+            if bboxes.shape[0] == 0:
+                bboxes = torch.zeros((0, 4), dtype=torch.half)
+            gt_bboxes.append(bboxes)
+
+        iou_ths = np.arange(0.3, 0.85, 0.05)
+        scores = [calculate_score(dt_bboxes, gt_bboxes, iou_th) for iou_th in iou_ths]
+        ar = np.mean(scores)
+        print("\n\n", "F2SCORE", ar, "\n\n")
+        return ar
