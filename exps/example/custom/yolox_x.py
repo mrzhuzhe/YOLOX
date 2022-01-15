@@ -30,7 +30,8 @@ class Exp(MyExp):
         self.flip_prob = 0.5
         self.no_aug_epochs = 2
         
-        self.input_size = (960, 960)
+        #self.input_size = (720, 1280)
+        self.input_size = (800, 1280)
         self.mosaic_scale = (0.5, 1.5)
-        self.random_size = (10, 20)
-        self.test_size = (960, 960)
+        self.random_size = (35, 45)
+        self.test_size = (800, 1280)

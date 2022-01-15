@@ -11,6 +11,8 @@ class Exp(MyExp):
         self.width = 0.75
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
+        self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
+
         # Define yourself dataset path
         self.data_dir = content + "/all"
         self.train_ann = "annotations_train_2.json"
@@ -38,8 +40,9 @@ class Exp(MyExp):
         self.enable_mixup = True
         """
 
-
-        self.input_size = (960, 960)
+        #self.input_size = (720, 1280)
+        self.input_size = (736, 1280)
         self.mosaic_scale = (0.5, 1.5)
-        self.random_size = (10, 20)
-        self.test_size = (960, 960)
+        self.random_size = (35, 45)
+        self.test_conf = 0.5
+        self.test_size = (736, 1280)
