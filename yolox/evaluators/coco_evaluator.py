@@ -29,18 +29,21 @@ from yolox.utils import (
 from torchvision.ops import box_iou
 from typing import List
 
-# f2 threhold
-ZZ_THR = 0.5
 # [TODO] calculatef script update https://www.kaggle.com/c/tensorflow-great-barrier-reef/discussion/290757
 def calculate_score(
     preds: List[torch.Tensor],
     gts: List[torch.Tensor],
     iou_th: float
 ) -> float:
-    num_tp = 0
-    num_fp = 0
-    num_fn = 0
+
+    # eval per img 
+    scores = []
+
     for p, gt in zip(preds, gts):
+
+        num_tp = 0
+        num_fp = 0
+        num_fn = 0
         if len(p) and len(gt):
             iou_matrix = box_iou(p[:,:4], gt)
             tp = len(torch.where(iou_matrix.max(0)[0] >= iou_th)[0])
@@ -53,22 +56,27 @@ def calculate_score(
             num_fn += len(gt)
         elif len(p) and len(gt) == 0:
             num_fp += len(p)
-    #score = 5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp)
-    #return score
-    # deal with 0
-    if (5 * num_tp + 4 * num_fn + num_fp )!=0:
-        score = 5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp )
-    else:
-        score = np.nan
-    if (num_tp+num_fn) != 0:
-        recall = num_tp/ (num_tp+num_fn)
-    else:
-        recall=np.nan
-    if (num_tp+num_fp)!=0:
-        precission = num_tp/ (num_tp+num_fp)
-    else:
-        precission=np.nan
+
+        # deal with 0
+        if (5 * num_tp + 4 * num_fn + num_fp )!=0:
+            scores.append(5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp ))
+        else:
+            scores.append(np.nan)
+
+        """
+        if (num_tp+num_fn) != 0:
+            recall = num_tp/ (num_tp+num_fn)
+        else:
+            recall=np.nan
+        if (num_tp+num_fp)!=0:
+            precission = num_tp/ (num_tp+num_fp)
+        else:
+            precission=np.nan
     return score, precission, recall
+
+        """
+    return np.nanmean(scores)
+        
 
 
 def per_class_mAP_table(coco_eval, class_names=COCO_CLASSES, headers=["class", "AP"], colums=6):
@@ -337,7 +345,7 @@ class COCOEvaluator:
         
         # RUN OVER IOU THR
         iou_ths = np.arange(0.3, 0.85, 0.05)
-        scores = [calculate_score(dt_bboxes, gt_bboxes, iou_th)[0] for iou_th in iou_ths]
+        scores = [calculate_score(dt_bboxes, gt_bboxes, iou_th) for iou_th in iou_ths]
         #ar = np.mean(scores)
         ar = np.nanmean(scores)
         logger.info(f"\n\n F2SCORE: {ar}\n\n")
