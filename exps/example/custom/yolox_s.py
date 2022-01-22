@@ -2,7 +2,7 @@ import os
 
 from yolox.exp import Exp as MyExp
 
-content = "../reef-data/out"
+content = "../"
 
 class Exp(MyExp):
     def __init__(self):
@@ -12,7 +12,7 @@ class Exp(MyExp):
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # Define yourself dataset path
-        self.data_dir = content + "/all"
+        self.data_dir = content
         self.train_ann = "annotations_train_2.json"
         self.val_ann = "annotations_valid_2.json"
 
@@ -27,7 +27,7 @@ class Exp(MyExp):
         self.ema = True
         
         # default 5
-        self.multiscale_range = 10
+        #self.multiscale_range = 10
 
         self.weight_decay = 5e-4
         self.momentum = 0.9
@@ -51,12 +51,11 @@ class Exp(MyExp):
 
 
         #self.input_size = (720, 1280)
-        self.input_size = (736, 1280)
-        #self.random_size = (35, 45)
-        self.random_size = (10, 20) # ????
+        self.input_size = (192, 320)
 
+        self.random_size = (6, 12) # ????
 
-        self.test_size = (736, 1280)
+        self.test_size = (384, 640)
         #self.test_size = (640, 1120)
         #self.test_size = (1120, 1920)
         #self.test_size = (1472, 2560)

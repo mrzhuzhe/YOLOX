@@ -11,8 +11,8 @@ import torch.nn as nn
 
 from .base_exp import BaseExp
 
-__datadirtrain__ = "images"
-__datadirval__ = "images"
+__datadirtrain__ = "slices"
+__datadirval__ = "slices"
 
 class Exp(BaseExp):
     def __init__(self):
