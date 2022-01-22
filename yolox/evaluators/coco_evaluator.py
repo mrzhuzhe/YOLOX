@@ -30,6 +30,7 @@ from torchvision.ops import box_iou
 from typing import List
 
 # [TODO] calculatef script update https://www.kaggle.com/c/tensorflow-great-barrier-reef/discussion/290757
+# shall be imagewise https://www.kaggle.com/bamps53/competition-metric-implementation/notebook
 def calculate_score(
     preds: List[torch.Tensor],
     gts: List[torch.Tensor],
@@ -37,13 +38,14 @@ def calculate_score(
 ) -> float:
 
     # eval per img 
-    scores = []
-
+    #scores = []
+    num_tp = 0
+    num_fp = 0
+    num_fn = 0
     for p, gt in zip(preds, gts):
-
-        num_tp = 0
-        num_fp = 0
-        num_fn = 0
+        #num_tp = 0
+        #num_fp = 0
+        #num_fn = 0
         if len(p) and len(gt):
             iou_matrix = box_iou(p[:,:4], gt)
             tp = len(torch.where(iou_matrix.max(0)[0] >= iou_th)[0])
@@ -55,13 +57,20 @@ def calculate_score(
         elif len(p) == 0 and len(gt):
             num_fn += len(gt)
         elif len(p) and len(gt) == 0:
+            #num_fp += len(p)
             num_fp += len(p)
 
         # deal with 0
+        """
         if (5 * num_tp + 4 * num_fn + num_fp )!=0:
             scores.append(5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp ))
         else:
             scores.append(np.nan)
+        """
+    if (5 * num_tp + 4 * num_fn + num_fp )!=0:
+        scores = 5 * num_tp / (5 * num_tp + 4 * num_fn + num_fp )
+    else:
+        scores = np.nan
 
         """
         if (num_tp+num_fn) != 0:
@@ -75,7 +84,8 @@ def calculate_score(
     return score, precission, recall
 
         """
-    return np.nanmean(scores)
+    #return np.nanmean(scores)
+    return scores
         
 
 
@@ -214,8 +224,8 @@ class COCOEvaluator:
             outputs_list += outputs
             data_list.extend(self.convert_to_coco_format(outputs, info_imgs, ids))
         
-        # evaluate
-        self.evalf2(outputs_list)
+        # evaluate not occure in training
+        #self.evalf2(outputs_list)
 
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
         if distributed:

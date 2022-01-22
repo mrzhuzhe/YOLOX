@@ -30,12 +30,15 @@ def plot_image_and_bboxes(img, bboxes):
     plt.show()
 
 def get_image(img_name):
-    return np.array(Image.open(img_name))
+    out_image = cv2.imread(img_name)
+    #out_image = cv2.cvtColor(out_image, cv2.COLOR_BGR2RGB)
+    return out_image
+    #return np.array(Image.open(img_name))
 ###
 
 
 REMOVE_NOBBOX = True # remove images with no bbox
-ROOT_DIR      = '../../reef-data/out/all/images'
+ROOT_DIR      = 'C:\train-area\images'
 IMAGE_SPLIT   = 4 # Image split : (eg : 2, 4...)
 WIDTH         = 1280
 HEIGHT        = 720
@@ -185,7 +188,7 @@ print(bboxes)
 
 #"""
 slices_row_lens = IMAGE_SPLIT *2-1
-OUTPUTPATH = "../../reef-data/slices/"
+OUTPUTPATH = "C:\train-area\slices"
 _namelist = []
 _outpathlist = []
 _annoslist = []
@@ -202,12 +205,14 @@ for i, row in tqdm(df.iterrows(), total = len(df)):
         _outpathlist.append(_outpath)
         annos.append([])
         cv2.imwrite(_outpath, tiles[x])
+        #_img = Image.fromarray(tiles[x])
+        #_img.save(_outpath)
     for bbox in bboxes:
         for sliced_bbox in bbox:
             annos[sliced_bbox["y"]*slices_row_lens + sliced_bbox["x"]] = [sliced_bbox["annotation"]]
     _annoslist += annos
-    if i > 6:
-        break
+    #if i > 6:
+    #    break
 
 slices_df = pd.DataFrame({'name': _namelist,
                    'path': _outpathlist,

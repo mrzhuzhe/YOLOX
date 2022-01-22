@@ -18,8 +18,8 @@ class Exp(MyExp):
 
         self.num_classes = 1
 
-        self.warmup_epochs = 1
-        self.max_epoch = 20
+        self.warmup_epochs = 5
+        self.max_epoch = 25
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
@@ -39,13 +39,13 @@ class Exp(MyExp):
         self.mixup_prob = 1.0
         self.hsv_prob = 1.0
         self.flip_prob = 0.5
-        self.degrees = 45.0
-        self.translate = 0.5
-        self.mosaic_scale = (0.1, 2)
-        #self.mosaic_scale = (0.5, 1.5)
-        #self.mixup_scale = (0.5, 1.5)
-        self.mixup_scale = (0.1, 2)
-        self.shear = 45.0
+        self.degrees = 10.0
+        self.translate = 0.1
+        #self.mosaic_scale = (0.1, 2)
+        self.mosaic_scale = (0.5, 1.5)
+        self.mixup_scale = (0.5, 1.5)
+        #self.mixup_scale = (0.1, 2)
+        self.shear = 2.0
         self.enable_mixup = True
 
 
@@ -55,9 +55,10 @@ class Exp(MyExp):
         #self.random_size = (10, 20) # ????
 
 
-        self.test_size = (736, 1280)
+        #self.test_size = (736, 1280)
         #self.test_size = (640, 1120)
-        #self.test_size = (1120, 1920)
+        self.test_size = (1120, 1920)
+        #self.test_size = (1472, 2560)
 
         self.test_conf = 0.1
         self.nmsthre = 0.65
