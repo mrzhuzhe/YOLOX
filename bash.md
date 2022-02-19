@@ -8,7 +8,8 @@ https://www.kaggle.com/drzhuzhe/fiber-defect-detect
 2. python tools/train.py -f exps/example/custom/yolox_m.py -d 1 -b 32 --fp16 -o -c ../reef-data/out/weights/yolox/yolox_m.pth
 3. python tools/train.py -f exps/example/custom/yolox_l.py -d 1 -b 32 --fp16 -o -c ../reef-data/out/weights/yolox/yolox_l.pth
 4. python tools/train.py -f exps/example/custom/yolox_x.py -d 1 -b 32 --fp16 -o -c ../reef-data/out/weights/yolox/yolox_x.pth
-
+## new
+python tools/train.py -f exps/example/custom/yolox_s.py -d 1 -b 32 --fp16 -o -c ../weights/yolox/yolox_s.pth
 
 # eval
 > python tools/eval.py -f  exps/example/custom/yolox_l.py -c ./YOLOX_outputs/yolox_l/yoloxl-best-640_ckpt.pth  -b 32 -d 1 --conf 0.01 --fp16 --fuse
