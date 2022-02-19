@@ -219,5 +219,3 @@ events.out.tfevents*
 
 # vim
 .vim
-
-tools/slices_df.csv
