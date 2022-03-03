@@ -55,8 +55,8 @@ class Exp(MyExp):
         #self.random_size = (35, 45)
         #self.random_size = (10, 20) # ????
 
-
-        self.test_size = (1728, 3072)
+        #self.input_size = (1728, 3072)
+        self.test_size = (2304, 4096)
         #self.test_size = (640, 1120)
         #self.test_size = (1120, 1920)
         #self.test_size = (1472, 2560)

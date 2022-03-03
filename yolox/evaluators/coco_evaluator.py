@@ -225,7 +225,7 @@ class COCOEvaluator:
             data_list.extend(self.convert_to_coco_format(outputs, info_imgs, ids))
         
         # evaluate not occure in training
-        #self.evalf2(outputs_list)
+        self.evalf2(outputs_list)
 
         statistics = torch.cuda.FloatTensor([inference_time, nms_time, n_samples])
         if distributed:
